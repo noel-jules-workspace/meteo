@@ -1,0 +1,23 @@
+
+> my-app@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.0.3
+   - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.8s
+ ○ Compiling / ...
+ ✓ Compiled / in 12.3s (1835 modules)
+ GET / 200 in 13389ms
+ GET / 200 in 133ms
+ ✓ Compiled in 288ms (589 modules)
+ ○ Compiling /[stationId] ...
+ ✓ Compiled /[stationId] in 55.6s (16385 modules)
+ GET / 200 in 87ms
+ GET / 200 in 23ms
+ GET /us:fps 200 in 149ms
+ GET /api/observations?station=us:fps&days=1 200 in 421ms
+ GET /api/observations?station=us%3Afps&days=14 200 in 57ms
+ GET /us:fps 200 in 84ms
+ GET /api/observations?station=us%3Afps&days=14 200 in 139ms
