@@ -88,6 +88,21 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
         let profile = PRESET_PROFILES['fps-south']; // default
         if (stationId.includes('holfuy:263')) profile = PRESET_PROFILES['kobern-rosenberg'];
 
+        let currentObs = undefined;
+        if (allObs && allObs.length > 0) {
+            const latestObs = allObs.reduce((a, b) => new Date(a.timestampUtc) > new Date(b.timestampUtc) ? a : b);
+            const rad = (latestObs.windDirDeg * Math.PI) / 180;
+            const u = -latestObs.windSpeedKmh * Math.sin(rad);
+            const v = -latestObs.windSpeedKmh * Math.cos(rad);
+            currentObs = {
+                u,
+                v,
+                speed: latestObs.windSpeedKmh,
+                gust: latestObs.windGustKmh !== undefined ? latestObs.windGustKmh : latestObs.windSpeedKmh,
+                temp: latestObs.tempC
+            };
+        }
+
         if (model && forecastStartIdx !== -1) {
             tf.tidy(() => {
                 for (let i = forecastStartIdx; i < forecastStartIdx + 72; i++) {
@@ -99,7 +114,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
                    let speed = rawSpeed, gust = rawGust, dir = rawDir, temp = rawTemp;
 
-                   const features = createFeatures(grids, t);
+                   const features = createFeatures(grids, t, currentObs);
                    if (features.length > 0) {
                        const normalized = features.map((f, c) => (f - means[c]) / stds[c]);
                        const input = tf.tensor2d([normalized]);
