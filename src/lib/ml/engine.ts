@@ -8,7 +8,7 @@ export interface TrainingDataRow {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createFeatures(nwpGrids: any[], timeIso: string): number[] {
+export function createFeatures(nwpGrids: any[], timeIso: string, currentObs?: {u: number, v: number, speed: number, gust: number, temp: number}): number[] {
   const features: number[] = [];
   // timeIso might be an Open-Meteo string like "YYYY-MM-DDTHH:00" without Z
   const date = timeIso.endsWith('Z') ? new Date(timeIso) : new Date(timeIso + 'Z');
@@ -47,15 +47,32 @@ export function createFeatures(nwpGrids: any[], timeIso: string): number[] {
     features.push(grid.metadata.elevation_diff);
   }
 
+  if (currentObs) {
+    features.push(currentObs.u);
+    features.push(currentObs.v);
+    features.push(currentObs.speed);
+    features.push(currentObs.gust);
+    features.push(currentObs.temp);
+  } else {
+    features.push(0);
+    features.push(0);
+    features.push(0);
+    features.push(0);
+    features.push(0);
+  }
+
   return features;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function trainModel(stationId: string, nwpGrids: any[], observations: ObservationRecord[], onProgress: (epoch: number, loss: number) => void) {
+  // Explicitly sort observations chronologically to ensure training is on oldest data
+  const sortedObs = [...observations].sort((a, b) => new Date(a.timestampUtc).getTime() - new Date(b.timestampUtc).getTime());
+
   // Aggregate sub-hourly observations to hourly
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const hourlyObs = new Map<string, any>();
-  for (const obs of observations) {
+  for (const obs of sortedObs) {
     const d = new Date(obs.timestampUtc);
     d.setUTCMinutes(0, 0, 0); // snap to top of hour
     const hourKey = d.toISOString();
@@ -75,7 +92,10 @@ export async function trainModel(stationId: string, nwpGrids: any[], observation
   // Center grid is index 4 (middle of 3x3)
   const centerGrid = nwpGrids[4];
 
-  for (const [timeIso, obsVals] of Array.from(hourlyObs.entries())) {
+  const hourlyObsEntries = Array.from(hourlyObs.entries()).sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
+
+  for (let j = 0; j < hourlyObsEntries.length; j++) {
+    const [timeIso, obsVals] = hourlyObsEntries[j];
     const omTime = timeIso.slice(0, 16);
     const hourIdx = centerGrid.hourly.time.indexOf(omTime);
     if (hourIdx === -1) continue; // No overlapping NWP
@@ -89,7 +109,7 @@ export async function trainModel(stationId: string, nwpGrids: any[], observation
     }
     const meanU = sumU / obsVals.speeds.length;
     const meanV = sumV / obsVals.speeds.length;
-    const meanSpeed = Math.sqrt(meanU * meanU + meanV * meanV);
+    const meanSpeed = obsVals.speeds.reduce((a:number, b:number) => a + b, 0) / obsVals.speeds.length;
     const maxGust = obsVals.gusts.length > 0 ? Math.max(...obsVals.gusts) : meanSpeed;
     const meanTemp = obsVals.temps.reduce((a:number, b:number) => a + b, 0) / obsVals.temps.length;
 
@@ -108,9 +128,33 @@ export async function trainModel(stationId: string, nwpGrids: any[], observation
         meanTemp - nwpTemp
     ];
 
-    const features = createFeatures(nwpGrids, timeIso);
+    let currentObs = undefined;
+    if (j > 0) {
+      const prevObsVals = hourlyObsEntries[j - 1][1];
+      let prevSumU = 0, prevSumV = 0;
+      for (let i = 0; i < prevObsVals.speeds.length; i++) {
+        const rad = (prevObsVals.dirs[i] * Math.PI) / 180;
+        prevSumU += -prevObsVals.speeds[i] * Math.sin(rad);
+        prevSumV += -prevObsVals.speeds[i] * Math.cos(rad);
+      }
+      const prevMeanU = prevSumU / prevObsVals.speeds.length;
+      const prevMeanV = prevSumV / prevObsVals.speeds.length;
+      const prevMeanSpeed = prevObsVals.speeds.reduce((a:number, b:number) => a + b, 0) / prevObsVals.speeds.length;
+      const prevMaxGust = prevObsVals.gusts.length > 0 ? Math.max(...prevObsVals.gusts) : prevMeanSpeed;
+      const prevMeanTemp = prevObsVals.temps.reduce((a:number, b:number) => a + b, 0) / prevObsVals.temps.length;
+
+      currentObs = {
+        u: prevMeanU,
+        v: prevMeanV,
+        speed: prevMeanSpeed,
+        gust: prevMaxGust,
+        temp: prevMeanTemp
+      };
+    }
+
+    const features = createFeatures(nwpGrids, timeIso, currentObs);
     // ensure we got features for all 9 grids (sometimes an edge point drops)
-    if (features.length === 4 + 9 * 10) {
+    if (features.length === 4 + 9 * 10 + 5) {
         rows.push({ features, targets });
     }
   }

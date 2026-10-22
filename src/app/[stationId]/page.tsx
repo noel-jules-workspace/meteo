@@ -38,6 +38,9 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
   };
 
   useEffect(() => {
+    let currentModel: tf.LayersModel | null = null;
+    let isMounted = true;
+
     async function load() {
       try {
         setLoading(true);
@@ -77,10 +80,13 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
         }
 
         if (!model) {
-            setLoadingMsg('Training neural network on local data...');
-            const res = await trainModel(stationId, grids, allObs, (epoch, loss) => setProgress({ epoch, loss }));
+            if (isMounted) setLoadingMsg('Training neural network on local data...');
+            const res = await trainModel(stationId, grids, allObs, (epoch, loss) => {
+                 if (isMounted) setProgress({ epoch, loss });
+            });
+
             if (res) {
-                setMetrics(res.metrics);
+                if (isMounted) setMetrics(res.metrics);
                 model = await tf.loadLayersModel(`indexeddb://${res.cacheId}`);
                 const c = await db.models.get(res.cacheId);
                 if (c) {
@@ -90,6 +96,8 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
             }
         }
 
+        currentModel = model;
+
         // 5. Predict Forecast
         const centerGrid = grids[4]; // Center of 3x3
         const forecastStartIdx = centerGrid.hourly.time.findIndex((t: string) => new Date(t + 'Z') > new Date());
@@ -97,6 +105,21 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
         let profile = PRESET_PROFILES['fps-south']; // default
         if (stationId.includes('holfuy:263')) profile = PRESET_PROFILES['kobern-rosenberg'];
+
+        let currentObs = undefined;
+        if (allObs && allObs.length > 0) {
+            const latestObs = allObs.reduce((a, b) => new Date(a.timestampUtc) > new Date(b.timestampUtc) ? a : b);
+            const rad = (latestObs.windDirDeg * Math.PI) / 180;
+            const u = -latestObs.windSpeedKmh * Math.sin(rad);
+            const v = -latestObs.windSpeedKmh * Math.cos(rad);
+            currentObs = {
+                u,
+                v,
+                speed: latestObs.windSpeedKmh,
+                gust: latestObs.windGustKmh !== undefined ? latestObs.windGustKmh : latestObs.windSpeedKmh,
+                temp: latestObs.tempC
+            };
+        }
 
         if (model && forecastStartIdx !== -1) {
             tf.tidy(() => {
@@ -109,7 +132,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
                    let speed = rawSpeed, gust = rawGust, dir = rawDir, temp = rawTemp;
 
-                   const features = createFeatures(grids, t);
+                   const features = createFeatures(grids, t, currentObs);
                    if (features.length > 0) {
                        const normalized = features.map((f, c) => (f - means[c]) / stds[c]);
                        const input = tf.tensor2d([normalized]);
@@ -170,15 +193,23 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
              }
         }
 
-        setChartData(displayData);
-        setData({ metadata: obsData.metadata, allObs });
+        if (isMounted) {
+          setChartData(displayData);
+          setData({ metadata: obsData.metadata, allObs });
+        }
       } catch (err) {
         console.error(err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
     load();
+    return () => {
+      isMounted = false;
+      if (currentModel) {
+        currentModel.dispose();
+      }
+    };
   }, [stationId]);
 
   if (loading) {
