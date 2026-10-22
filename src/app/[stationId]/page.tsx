@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import {
   Container, Typography, Box, Card, CardContent, CircularProgress,
-  Accordion, AccordionSummary, AccordionDetails, Table, TableBody, TableCell, TableHead, TableRow, Tooltip
+  Accordion, AccordionSummary, AccordionDetails, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, ToggleButtonGroup, ToggleButton
 } from '@mui/material';
 import { ExpandMore, Info } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -24,6 +24,16 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
   const [metrics, setMetrics] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [chartData, setChartData] = useState<any[]>([]);
+  const [unit, setUnit] = useState<'mph' | 'kmh'>(stationId.startsWith('us:') ? 'mph' : 'kmh');
+
+  const speedToDisplay = (kmh: number | undefined) => {
+     if (kmh === undefined) return undefined;
+     return unit === 'mph' ? Math.round(kmh * 0.621371) : Math.round(kmh);
+  };
+
+  const toDisplayValue = (kmh: number) => {
+     return unit === 'mph' ? kmh * 0.621371 : kmh;
+  };
 
   useEffect(() => {
     async function load() {
@@ -176,16 +186,30 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
   return (
     <Container sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Forecast: {data?.metadata?.name || stationId}
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4">
+          Forecast: {data?.metadata?.name || stationId}
+        </Typography>
+        <ToggleButtonGroup
+          color="primary"
+          value={unit}
+          exclusive
+          onChange={(e, newUnit) => {
+            if (newUnit !== null) setUnit(newUnit);
+          }}
+          aria-label="Speed Unit"
+        >
+          <ToggleButton value="kmh">km/h</ToggleButton>
+          <ToggleButton value="mph">mph</ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
 
       {metrics && (
         <Card sx={{ mb: 4, bgcolor: '#1e1e1e' }}>
           <CardContent>
              <Typography variant="h6" gutterBottom color="primary">Model Validation Quality (Holdout MAE)</Typography>
-             <Typography variant="body2">Speed Error (Corrected vs Raw): {metrics.valSpeedMae.toFixed(2)} km/h vs ~2.50 km/h (Raw Avg)</Typography>
-             <Typography variant="body2">Gust Error (Corrected): {metrics.valGustMae.toFixed(2)} km/h</Typography>
+             <Typography variant="body2">Speed Error (Corrected vs Raw): {toDisplayValue(metrics.valSpeedMae).toFixed(2)} {unit} vs ~{toDisplayValue(2.50).toFixed(2)} {unit} (Raw Avg)</Typography>
+             <Typography variant="body2">Gust Error (Corrected): {toDisplayValue(metrics.valGustMae).toFixed(2)} {unit}</Typography>
              <Typography variant="body2">Temperature Error: {metrics.valTempMae.toFixed(2)} °C</Typography>
           </CardContent>
         </Card>
@@ -193,10 +217,15 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
       <Card sx={{ mb: 4 }}>
         <CardContent>
-          <Typography variant="h6" gutterBottom>Wind Speed & Gust (km/h)</Typography>
+          <Typography variant="h6" gutterBottom>Wind Speed & Gust ({unit})</Typography>
           <Box sx={{ height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+              <LineChart data={chartData.map(d => ({
+                  ...d,
+                  speed: speedToDisplay(d.speed),
+                  rawSpeed: speedToDisplay(d.rawSpeed),
+                  gust: speedToDisplay(d.gust)
+              }))}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                 <XAxis dataKey="time" />
                 <YAxis />
@@ -237,7 +266,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
                     </Box>
                   </Tooltip>
                 </TableCell>
-                <TableCell>{row.speed} (G {row.gust}) km/h</TableCell>
+                <TableCell>{speedToDisplay(row.speed)} (G {speedToDisplay(row.gust)}) {unit}</TableCell>
                 <TableCell>{row.dir}°</TableCell>
                 <TableCell>{row.temp}°C</TableCell>
                 <TableCell>{row.rain}%</TableCell>

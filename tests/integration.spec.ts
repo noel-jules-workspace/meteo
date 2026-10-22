@@ -43,7 +43,7 @@ test.describe('Integration Tests: Station Data Rendering', () => {
       // e.g. "12 (G 15) km/h"
       const windCell = tableRows.first().locator('td').nth(2);
       const windText = await windCell.textContent();
-      expect(windText).toMatch(/[0-9]+.*km\/h/);
+      expect(windText).toMatch(/[0-9]+.*(kmh|mph)/);
     });
   }
 });

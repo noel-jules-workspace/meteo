@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
            if(f.properties.windSpeed.value !== null) {
               observations.push({
                  timestampUtc: f.properties.timestamp,
-                 windSpeedKmh: f.properties.windSpeed.value * 3.6, // m/s to km/h
-                 windGustKmh: f.properties.windGust.value ? f.properties.windGust.value * 3.6 : undefined,
+                 windSpeedKmh: f.properties.windSpeed.value, // NWS API already returns km/h
+                 windGustKmh: f.properties.windGust.value ? f.properties.windGust.value : undefined,
                  windDirDeg: f.properties.windDirection.value || 0,
                  tempC: f.properties.temperature.value || 0,
                  dewPointC: f.properties.dewpoint.value || 0,
