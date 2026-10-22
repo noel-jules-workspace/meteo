@@ -1,0 +1,37 @@
+name: Deployment Integration Tests
+on:
+  deployment_status:
+    # Runs when Vercel or GitHub deployment status updates
+  workflow_dispatch:
+    inputs:
+      baseUrl:
+        description: 'URL to test against'
+        required: true
+        default: 'https://meteo-rose.vercel.app'
+
+jobs:
+  integration-test:
+    if: github.event.deployment_status.state == 'success' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+    - name: Install dependencies
+      run: npm install --legacy-peer-deps
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps chromium
+    - name: Run Integration Tests
+      run: npx playwright test tests/integration.spec.ts
+      env:
+        # Use the deployment URL if triggered by deployment_status, otherwise use the manual input
+        BASE_URL: ${{ github.event.deployment_status.target_url || github.event.inputs.baseUrl }}
+        CI: true
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: playwright-integration-report
+        path: playwright-report/
+        retention-days: 30

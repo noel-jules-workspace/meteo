@@ -1,5 +1,13 @@
 This is a Next.js 15 App Router project bootstrapped with `create-next-app` that implements a Zero-Key Browser-ML Paragliding Weather Bias-Correction App.
 
+## Live Demos
+
+Here are examples of live deployed station targets. They use different sources to gather real observation data and perform on-device machine learning predictions:
+
+* **[us:fps](https://meteo-rose.vercel.app/us:fps)**: Fetches public observation data from the US National Weather Service (NWS) endpoints.
+* **[de:holfuy:263](https://meteo-rose.vercel.app/de:holfuy:263)**: Parses public measurement embeddings for Holfuy targets.
+* **[de:IKOBER13](https://meteo-rose.vercel.app/de:IKOBER13)**: Scrapes public Wunderground PWS history.
+
 ## Honesty Contract
 
 This application strictly adheres to the following principles regarding data processing and proxy integrations:
