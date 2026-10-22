@@ -52,10 +52,13 @@ export function createFeatures(nwpGrids: any[], timeIso: string): number[] {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function trainModel(stationId: string, nwpGrids: any[], observations: ObservationRecord[], onProgress: (epoch: number, loss: number) => void) {
+  // Explicitly sort observations chronologically to ensure training is on oldest data
+  const sortedObs = [...observations].sort((a, b) => new Date(a.timestampUtc).getTime() - new Date(b.timestampUtc).getTime());
+
   // Aggregate sub-hourly observations to hourly
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const hourlyObs = new Map<string, any>();
-  for (const obs of observations) {
+  for (const obs of sortedObs) {
     const d = new Date(obs.timestampUtc);
     d.setUTCMinutes(0, 0, 0); // snap to top of hour
     const hourKey = d.toISOString();

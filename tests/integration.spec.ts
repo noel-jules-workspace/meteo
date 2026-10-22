@@ -10,6 +10,24 @@ const stations = [
   'de:IKOBER13'
 ];
 
+test.describe('Integration Tests: API Validation', () => {
+  test('Returns 404 and appropriate error for unknown station ID in /api/observations', async ({ request }) => {
+    const response = await request.get('/api/observations?station=unknown:station:123');
+    expect(response.status()).toBe(404);
+
+    const body = await response.json();
+    expect(body.error).toBe('Unknown station ID');
+  });
+
+  test('Returns 400 if station ID is missing', async ({ request }) => {
+    const response = await request.get('/api/observations');
+    expect(response.status()).toBe(400);
+
+    const body = await response.json();
+    expect(body.error).toBe('Station ID is required');
+  });
+});
+
 test.describe('Integration Tests: Station Data Rendering', () => {
   for (const station of stations) {
     test(`Verify actual data is rendered for station ${station}`, async ({ page }) => {

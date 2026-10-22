@@ -36,6 +36,9 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
   };
 
   useEffect(() => {
+    let currentModel: tf.LayersModel | null = null;
+    let isMounted = true;
+
     async function load() {
       try {
         setLoading(true);
@@ -68,9 +71,11 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
         }
 
         if (!model) {
-            const res = await trainModel(stationId, grids, allObs, (epoch, loss) => setProgress({ epoch, loss }));
+            const res = await trainModel(stationId, grids, allObs, (epoch, loss) => {
+                 if (isMounted) setProgress({ epoch, loss });
+            });
             if (res) {
-                setMetrics(res.metrics);
+                if (isMounted) setMetrics(res.metrics);
                 model = await tf.loadLayersModel(`indexeddb://${res.cacheId}`);
                 const c = await db.models.get(res.cacheId);
                 if (c) {
@@ -79,6 +84,8 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
                 }
             }
         }
+
+        currentModel = model;
 
         // 5. Predict Forecast
         const centerGrid = grids[4]; // Center of 3x3
@@ -160,15 +167,23 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
              }
         }
 
-        setChartData(displayData);
-        setData({ metadata: obsData.metadata, allObs });
+        if (isMounted) {
+          setChartData(displayData);
+          setData({ metadata: obsData.metadata, allObs });
+        }
       } catch (err) {
         console.error(err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
     load();
+    return () => {
+      isMounted = false;
+      if (currentModel) {
+        currentModel.dispose();
+      }
+    };
   }, [stationId]);
 
   if (loading) {
