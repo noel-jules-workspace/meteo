@@ -19,6 +19,8 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
   const [loading, setLoading] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any>(null);
+  const [loadingMsg, setLoadingMsg] = useState<string>('Initializing...');
+  const [loadingDays, setLoadingDays] = useState<number>(0);
   const [progress, setProgress] = useState<{ epoch: number, loss: number } | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [metrics, setMetrics] = useState<any>(null);
@@ -39,20 +41,27 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
     async function load() {
       try {
         setLoading(true);
+        setLoadingMsg('Fetching metadata & recent observations...');
         // 1. Fetch metadata & new obs
         const obsRes = await fetch(`/api/observations?station=${encodeURIComponent(stationId)}&days=14`);
         if (!obsRes.ok) throw new Error('Station proxy failed');
         const obsData = await obsRes.json();
 
+        setLoadingMsg('Loading local historical data from browser storage...');
         // 2. Accumulate in Dexie
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const records: ObservationRecord[] = obsData.observations.map((o: any) => ({ ...o, stationId }));
         await db.observations.bulkPut(records);
         const allObs = await db.observations.where('stationId').equals(stationId).toArray();
 
+        const uniqueDays = new Set(allObs.map(o => new Date(o.timestampUtc).toISOString().split('T')[0])).size;
+        setLoadingDays(uniqueDays);
+
+        setLoadingMsg(`Loaded ${uniqueDays} days of data (Goal: 90 days). Fetching NWP forecast grids...`);
         // 3. Fetch Open-Meteo
         const grids = await fetchNWPForecast(obsData.metadata.lat, obsData.metadata.lon, obsData.metadata.elevationM, 90, 3);
 
+        setLoadingMsg('Checking for cached machine learning model...');
         // 4. ML Train / Load
         let model: tf.LayersModel | null = null;
         let means: number[] = [];
@@ -68,6 +77,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
         }
 
         if (!model) {
+            setLoadingMsg('Training neural network on local data...');
             const res = await trainModel(stationId, grids, allObs, (epoch, loss) => setProgress({ epoch, loss }));
             if (res) {
                 setMetrics(res.metrics);
@@ -173,13 +183,27 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
   if (loading) {
     return (
-      <Container sx={{ mt: 4, textAlign: 'center' }}>
+      <Container sx={{ mt: 4, textAlign: 'center', maxWidth: '600px' }}>
         <CircularProgress variant={progress ? "determinate" : "indeterminate"} value={progress ? (progress.epoch / 50) * 100 : undefined} />
         {progress ? (
           <Typography sx={{ mt: 2 }}>Training Model... Epoch {progress.epoch} / 50 (Loss: {progress.loss.toFixed(4)})</Typography>
         ) : (
-          <Typography sx={{ mt: 2 }}>Fetching and processing data...</Typography>
+          <Typography sx={{ mt: 2 }}>{loadingMsg}</Typography>
         )}
+
+        <Box sx={{ mt: 4, textAlign: 'left', p: 3, border: '1px solid #333', borderRadius: 2, bgcolor: 'background.paper' }}>
+          <Typography variant="h6" gutterBottom>How it works</Typography>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            This application generates highly accurate, site-specific wind forecasts directly in your browser:
+          </Typography>
+          <Box component="ol" sx={{ pl: 2, m: 0, typography: 'body2', display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <li>Fetching recent wind observations and weather station metadata.</li>
+            <li>Accumulating historical data locally in your browser storage (Currently loaded {loadingDays} days / Goal: 90 days).</li>
+            <li>Retrieving High-Resolution NWP forecasts (like HRRR or ICON) from Open-Meteo.</li>
+            <li>Training a lightweight machine learning model locally to correct wind speed and direction based on historical patterns (if {'≥'} 7 days of data exists).</li>
+            <li>Generating the final, corrected forecast instantly.</li>
+          </Box>
+        </Box>
       </Container>
     );
   }
@@ -281,12 +305,23 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
           <Typography>Data & Diagnostics (Honesty Contract)</Typography>
         </AccordionSummary>
         <AccordionDetails>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             <strong>Station Target:</strong> {data?.metadata?.sourceUrl} <br/>
             <strong>Total Local Obs Stored:</strong> {data?.allObs?.length || 0} hours <br/>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <strong>Days of Data Collected:</strong> {data?.allObs ? new Set(data.allObs.map((o: any) => new Date(o.timestampUtc).toISOString().split('T')[0])).size : 0} / 90 days (Goal) <br/>
             <strong>ML Fallback:</strong> Displaying Open-Meteo HRRR/ICON-D2 9-point grid if local overlap {'<'} 168 hours.<br/>
             <em>Not a safety guarantee. Browser ML corrections are experimental statistical estimates.</em>
           </Typography>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 2, fontSize: '1rem' }}>How it works</Typography>
+          <Box component="ol" sx={{ pl: 2, m: 0, typography: 'body2', color: 'text.secondary', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <li>Fetches recent wind observations and weather station metadata.</li>
+            <li>Accumulates historical data locally in your browser storage.</li>
+            <li>Retrieves High-Resolution NWP forecasts (like HRRR or ICON) from Open-Meteo.</li>
+            <li>Trains a lightweight machine learning model locally to correct wind speed and direction based on historical patterns (requires {'≥'} 7 days of data).</li>
+            <li>Generates the final, corrected forecast instantly.</li>
+          </Box>
         </AccordionDetails>
       </Accordion>
     </Container>
