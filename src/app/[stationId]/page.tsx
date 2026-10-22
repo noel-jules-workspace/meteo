@@ -25,6 +25,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [chartData, setChartData] = useState<any[]>([]);
   const [unit, setUnit] = useState<'mph' | 'kmh'>(stationId.startsWith('us:') ? 'mph' : 'kmh');
+  const [tempUnit, setTempUnit] = useState<'C' | 'F'>(stationId.startsWith('us:') ? 'F' : 'C');
 
   const speedToDisplay = (kmh: number | undefined) => {
      if (kmh === undefined) return undefined;
@@ -33,6 +34,14 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
   const toDisplayValue = (kmh: number) => {
      return unit === 'mph' ? kmh * 0.621371 : kmh;
+  };
+
+  const tempToDisplay = (tempC: number) => {
+     return tempUnit === 'F' ? Math.round(tempC * 9/5 + 32) : Math.round(tempC);
+  };
+
+  const tempErrorToDisplay = (tempErrorC: number) => {
+     return tempUnit === 'F' ? tempErrorC * 9/5 : tempErrorC;
   };
 
   useEffect(() => {
@@ -153,7 +162,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
                        speed: Math.round(speed),
                        gust: Math.round(gust),
                        dir: Math.round(dir),
-                       temp: Math.round(temp),
+                           temp: temp,
                        rain: rainProb,
                        color: conditions.color,
                        breakdown: conditions.breakdowns
@@ -219,18 +228,32 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
         <Typography variant="h4">
           Forecast: {data?.metadata?.name || stationId}
         </Typography>
-        <ToggleButtonGroup
-          color="primary"
-          value={unit}
-          exclusive
-          onChange={(e, newUnit) => {
-            if (newUnit !== null) setUnit(newUnit);
-          }}
-          aria-label="Speed Unit"
-        >
-          <ToggleButton value="kmh">km/h</ToggleButton>
-          <ToggleButton value="mph">mph</ToggleButton>
-        </ToggleButtonGroup>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <ToggleButtonGroup
+            color="primary"
+            value={unit}
+            exclusive
+            onChange={(e, newUnit) => {
+              if (newUnit !== null) setUnit(newUnit);
+            }}
+            aria-label="Speed Unit"
+          >
+            <ToggleButton value="kmh">km/h</ToggleButton>
+            <ToggleButton value="mph">mph</ToggleButton>
+          </ToggleButtonGroup>
+          <ToggleButtonGroup
+            color="primary"
+            value={tempUnit}
+            exclusive
+            onChange={(e, newUnit) => {
+              if (newUnit !== null) setTempUnit(newUnit);
+            }}
+            aria-label="Temperature Unit"
+          >
+            <ToggleButton value="C">°C</ToggleButton>
+            <ToggleButton value="F">°F</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
       </Box>
 
       {metrics && (
@@ -239,7 +262,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
              <Typography variant="h6" gutterBottom color="primary">Model Validation Quality (Holdout MAE)</Typography>
              <Typography variant="body2">Speed Error (Corrected vs Raw): {toDisplayValue(metrics.valSpeedMae).toFixed(2)} {unit} vs ~{toDisplayValue(2.50).toFixed(2)} {unit} (Raw Avg)</Typography>
              <Typography variant="body2">Gust Error (Corrected): {toDisplayValue(metrics.valGustMae).toFixed(2)} {unit}</Typography>
-             <Typography variant="body2">Temperature Error: {metrics.valTempMae.toFixed(2)} °C</Typography>
+             <Typography variant="body2">Temperature Error: {tempErrorToDisplay(metrics.valTempMae).toFixed(2)} °{tempUnit}</Typography>
           </CardContent>
         </Card>
       )}
@@ -305,7 +328,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
                     </Tooltip>
                   </TableCell>
                   <TableCell>{row.dir}°</TableCell>
-                  <TableCell>{row.temp}°C</TableCell>
+                  <TableCell>{tempToDisplay(row.temp)}°{tempUnit}</TableCell>
                   <TableCell>{row.rain}%</TableCell>
                 </TableRow>
               );
