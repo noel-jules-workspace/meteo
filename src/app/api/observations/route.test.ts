@@ -177,4 +177,103 @@ describe('Observations API Route', () => {
         expect(data.observations).toHaveLength(1);
         expect(data.observations[0].windSpeedKmh).toBe(12);
     });
+
+    it('handles !res.ok for all sources', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            ok: false
+        }));
+
+        const req1 = createRequest('/api/observations?station=us:fps');
+        const res1 = await GET(req1);
+        expect(res1.status).toBe(200);
+
+        const req2 = createRequest('/api/observations?station=de:holfuy:263');
+        const res2 = await GET(req2);
+        expect(res2.status).toBe(200);
+
+        const req3 = createRequest('/api/observations?station=de:IKOBER13');
+        const res3 = await GET(req3);
+        expect(res3.status).toBe(200);
+
+        const req4 = createRequest('/api/observations?station=de:dwd:1001');
+        const res4 = await GET(req4);
+        expect(res4.status).toBe(200);
+    });
+
+    it('handles falsy data paths in sources', async () => {
+        // NWS
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+            ok: true,
+            json: vi.fn().mockResolvedValue({
+                features: []
+            })
+        }));
+        await GET(createRequest('/api/observations?station=us:fps'));
+
+        // Holfuy
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+            ok: true,
+            json: vi.fn().mockResolvedValue({
+                measurements: null // trigger if (data.measurements)
+            })
+        }));
+        await GET(createRequest('/api/observations?station=de:holfuy:263'));
+
+        // Wunderground
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+            ok: true,
+            json: vi.fn().mockResolvedValue({
+                observations: null // trigger if(data.observations)
+            })
+        }));
+        await GET(createRequest('/api/observations?station=de:IKOBER13'));
+    });
+
+    it('handles falsy data paths in DWD', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+            ok: true,
+            json: vi.fn().mockResolvedValue({
+                weather: []
+            })
+        }));
+        await GET(createRequest('/api/observations?station=de:dwd:1001'));
+    });
+
+    it('covers optional values missing', async () => {
+        // NWS
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+            ok: true,
+            json: vi.fn().mockResolvedValue({
+                features: [{
+                    properties: {
+                        timestamp: '2023-10-01T12:00:00Z',
+                        windSpeed: { value: 10 },
+                        windGust: { value: null }, // no gust
+                        windDirection: { value: null }, // no dir
+                        temperature: { value: null },
+                        dewpoint: { value: null }
+                    }
+                }]
+            })
+        }));
+        await GET(createRequest('/api/observations?station=us:fps'));
+
+        // DWD
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+            ok: true,
+            json: vi.fn().mockResolvedValue({
+                weather: [{
+                    timestamp: '2023-10-01T12:00:00Z',
+                    wind_speed: 10,
+                    wind_gust_speed: null,
+                    wind_direction: null,
+                    temperature: 20,
+                    dew_point: 10,
+                    precipitation: 0
+                }]
+            })
+        }));
+        await GET(createRequest('/api/observations?station=de:dwd:1001'));
+    });
+
 });
