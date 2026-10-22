@@ -164,9 +164,11 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
   if (loading) {
     return (
       <Container sx={{ mt: 4, textAlign: 'center' }}>
-        <CircularProgress />
-        {progress && (
-          <Typography sx={{ mt: 2 }}>Training Model... Epoch {progress.epoch} (Loss: {progress.loss.toFixed(4)})</Typography>
+        <CircularProgress variant={progress ? "determinate" : "indeterminate"} value={progress ? (progress.epoch / 50) * 100 : undefined} />
+        {progress ? (
+          <Typography sx={{ mt: 2 }}>Training Model... Epoch {progress.epoch} / 50 (Loss: {progress.loss.toFixed(4)})</Typography>
+        ) : (
+          <Typography sx={{ mt: 2 }}>Fetching and processing data...</Typography>
         )}
       </Container>
     );
