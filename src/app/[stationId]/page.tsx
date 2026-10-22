@@ -195,7 +195,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
     return () => {
       isMounted = false;
       if (currentModel) {
-        currentModel.dispose();
+        if (typeof currentModel.dispose === "function") currentModel.dispose();
       }
     };
   }, [stationId]);
