@@ -58,8 +58,8 @@ test.describe('Integration Tests: Station Data Rendering', () => {
       await expect(chartSurface).toBeVisible({ timeout: 15000 });
 
       // Check that the first row contains some expected text formats for Wind
-      // e.g. "12 (G 15) km/h"
-      const windCell = tableRows.first().locator('td').nth(2);
+      // e.g. "12G15 kmh" or "12 mph"
+      const windCell = tableRows.first().locator('td').nth(1); // the wind cell is now column index 1 because we removed score
       const windText = await windCell.textContent();
       expect(windText).toMatch(/[0-9]+.*(kmh|mph)/);
     });
