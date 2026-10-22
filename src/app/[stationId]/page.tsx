@@ -5,7 +5,7 @@ import {
   Container, Typography, Box, Card, CardContent, CircularProgress,
   Accordion, AccordionSummary, AccordionDetails, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, ToggleButtonGroup, ToggleButton
 } from '@mui/material';
-import { ExpandMore, Info } from '@mui/icons-material';
+import { ExpandMore, Info, ArrowDownward } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import { fetchNWPForecast } from '@/lib/api/openmeteo';
 import { db, ObservationRecord } from '@/lib/db/dexie';
@@ -319,12 +319,59 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
           <Typography>Data & Diagnostics (Honesty Contract)</Typography>
         </AccordionSummary>
         <AccordionDetails>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             <strong>Station Target:</strong> {data?.metadata?.sourceUrl} <br/>
             <strong>Total Local Obs Stored:</strong> {data?.allObs?.length || 0} hours <br/>
             <strong>ML Fallback:</strong> Displaying Open-Meteo HRRR/ICON-D2 9-point grid if local overlap {'<'} 168 hours.<br/>
             <em>Not a safety guarantee. Browser ML corrections are experimental statistical estimates.</em>
           </Typography>
+
+          <Box sx={{ mt: 3, p: 2, border: '1px solid #333', borderRadius: 2, bgcolor: '#121212' }}>
+            <Typography variant="subtitle2" color="primary" gutterBottom>
+              How the AI Works (On-Device Neural Network)
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              This app uses TensorFlow.js to train a model completely in your browser. It learns the unique microclimate of this station by comparing historical weather forecasts against actual real-time observations, then predicts bias corrections for the current forecast.
+            </Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, my: 2 }}>
+              <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary" display="block">Input Layer</Typography>
+                <Typography variant="body2">99 Features</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                  (Cyclic Time, 9-Grid NWP Forecasts, Current Obs)
+                </Typography>
+              </Card>
+
+              <ArrowDownward fontSize="small" sx={{ opacity: 0.5 }} />
+
+              <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary" display="block">Hidden Layer 1</Typography>
+                <Typography variant="body2">64 Nodes (ReLU)</Typography>
+              </Card>
+
+              <ArrowDownward fontSize="small" sx={{ opacity: 0.5 }} />
+
+              <Typography variant="caption" sx={{ opacity: 0.5 }}>20% Dropout (Regularization)</Typography>
+
+              <ArrowDownward fontSize="small" sx={{ opacity: 0.5 }} />
+
+              <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary" display="block">Hidden Layer 2</Typography>
+                <Typography variant="body2">32 Nodes (ReLU)</Typography>
+              </Card>
+
+              <ArrowDownward fontSize="small" sx={{ opacity: 0.5 }} />
+
+              <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center', border: '1px solid #90caf9' }}>
+                <Typography variant="caption" color="primary" display="block">Output Layer</Typography>
+                <Typography variant="body2">5 Predictions (Linear)</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                  (Δu, Δv, Δspeed, Δgust, Δtemp)
+                </Typography>
+              </Card>
+            </Box>
+          </Box>
         </AccordionDetails>
       </Accordion>
     </Container>
