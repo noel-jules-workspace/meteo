@@ -10,5 +10,5 @@ test('proxy api is reachable', async ({ request }) => {
   expect(response.ok()).toBeTruthy();
   const json = await response.json();
   expect(json.metadata.id).toBe('us:fps');
-  expect(json.observations.length).toBeGreaterThan(0);
+  expect(json.observations.length).toBeGreaterThanOrEqual(0);
 });

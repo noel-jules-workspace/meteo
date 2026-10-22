@@ -82,7 +82,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
         // 5. Predict Forecast
         const centerGrid = grids[4]; // Center of 3x3
-        const forecastStartIdx = centerGrid.hourly.time.findIndex((t: string) => new Date(t) > new Date());
+        const forecastStartIdx = centerGrid.hourly.time.findIndex((t: string) => new Date(t + 'Z') > new Date());
         const displayData = [];
 
         let profile = PRESET_PROFILES['fps-south']; // default
@@ -130,7 +130,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
                    const scoring = calculateSoaringScore(profile, speed, gust, dir, rainProb, blh);
 
                    displayData.push({
-                       time: new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                       time: new Date(t + 'Z').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                        rawSpeed: Math.round(rawSpeed),
                        speed: Math.round(speed),
                        gust: Math.round(gust),
@@ -147,7 +147,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
              for (let i = Math.max(0, forecastStartIdx); i < Math.max(0, forecastStartIdx) + 72; i++) {
                 if(!centerGrid.hourly.time[i]) continue;
                 displayData.push({
-                   time: new Date(centerGrid.hourly.time[i]).toLocaleTimeString(),
+                   time: new Date(centerGrid.hourly.time[i] + 'Z').toLocaleTimeString(),
                    speed: centerGrid.hourly.wind_speed_10m[i],
                    rawSpeed: centerGrid.hourly.wind_speed_10m[i],
                    gust: centerGrid.hourly.wind_gusts_10m[i],
