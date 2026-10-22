@@ -453,11 +453,16 @@ describe('Station Page', () => {
 
          const kmhButton = await screen.findByRole('button', { name: 'km/h' });
          const mphButton = await screen.findByRole('button', { name: 'mph' });
+         const cButton = await screen.findByRole('button', { name: '°C' });
+         const fButton = await screen.findByRole('button', { name: '°F' });
 
          // Trigger unit change
          const user = userEvent.setup();
          await user.click(kmhButton);
          await user.click(mphButton);
+
+         await user.click(cButton);
+         await user.click(fButton);
     });
     it('covers speedToDisplay kmh correct rendering', async () => {
          // Because React renders asynchronously, intercepting progress bar updates in tests requires carefully delaying the mocked resolve
@@ -493,11 +498,16 @@ describe('Station Page', () => {
 
          const kmhButton = await screen.findByRole('button', { name: 'km/h' });
          const mphButton = await screen.findByRole('button', { name: 'mph' });
+         const cButton = await screen.findByRole('button', { name: '°C' });
+         const fButton = await screen.findByRole('button', { name: '°F' });
 
          // Trigger unit change
          const user = userEvent.setup();
          await user.click(mphButton);
          await user.click(kmhButton);
+
+         await user.click(fButton);
+         await user.click(cButton);
     });
 
     it('covers speedToDisplay edge case where displaySpeed === displayGust', async () => {
