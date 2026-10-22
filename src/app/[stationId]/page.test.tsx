@@ -269,6 +269,7 @@ describe('Station Page', () => {
                 }
             },
             null, null, null, null
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ] as any);
 
          const params = Promise.resolve({ stationId: encodeURIComponent('us:fps') });
@@ -298,22 +299,6 @@ describe('Station Page', () => {
          // and `speedToDisplay(undefined)` is a pure local function, we've largely covered the component execution path.
     });
 
-    it('covers speedToDisplay missing branch', async () => {
-         vi.mocked(engine.trainModel).mockResolvedValueOnce(null);
-
-         const params = Promise.resolve({ stationId: encodeURIComponent('us:fps') });
-         render(<StationPage params={params} />);
-
-         await waitFor(() => {
-             expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-         }, { timeout: 3000 });
-
-         // Trigger unit change with null (simulate ToggleButtonGroup edge case where newUnit is null)
-         // Actually speedToDisplay(undefined) handles internal fallbacks, let's just make sure the coverage is hit by ensuring our data has undefined somewhere if possible, or trigger onChange with null via props directly if it was a custom component.
-         // Since we can't easily trigger the ToggleButtonGroup onChange with null via DOM,
-         // and `speedToDisplay(undefined)` is a pure local function, we've largely covered the component execution path.
-    });
-
     it('covers speedToDisplay kmh correctly', async () => {
          vi.mocked(engine.trainModel).mockResolvedValueOnce(null);
 
@@ -326,7 +311,6 @@ describe('Station Page', () => {
     });
 
     it('covers speed missing in display value correctly by forcing null unit', async () => {
-         const user = userEvent.setup();
          vi.mocked(engine.trainModel).mockResolvedValueOnce(null);
 
          const params = Promise.resolve({ stationId: encodeURIComponent('us:fps') });
@@ -345,6 +329,7 @@ describe('Station Page', () => {
          vi.mocked(engine.trainModel).mockResolvedValueOnce({
              cacheId: 'test_model_123',
              // Intentionally missing some metric fields
+             // eslint-disable-next-line @typescript-eslint/no-explicit-any
              metrics: { valSpeedMae: 1.5, valGustMae: undefined, valTempMae: undefined, valDirMae: 0.2 } as any
          });
 
@@ -397,8 +382,10 @@ describe('Station Page', () => {
                 metadata: { grid_elevation: 100, elevation_diff: 0 },
                 hourly: {
                     time: [new Date(Date.now() + 3600000).toISOString().slice(0, 16)],
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     wind_speed_10m: [undefined as any],
                     wind_direction_10m: [180],
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     wind_gusts_10m: [undefined as any],
                     temperature_2m: [20],
                     precipitation_probability: [0],
@@ -406,6 +393,7 @@ describe('Station Page', () => {
                 }
             },
             null, null, null, null
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
          ] as any);
 
          const params = Promise.resolve({ stationId: encodeURIComponent('us:fps') });
@@ -440,8 +428,10 @@ describe('Station Page', () => {
                 metadata: { grid_elevation: 100, elevation_diff: 0 },
                 hourly: {
                     time: [new Date(Date.now() + 3600000).toISOString().slice(0, 16)],
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     wind_speed_10m: [undefined as any],
                     wind_direction_10m: [180],
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     wind_gusts_10m: [undefined as any],
                     temperature_2m: [20],
                     precipitation_probability: [0],
@@ -449,6 +439,7 @@ describe('Station Page', () => {
                 }
             },
             null, null, null, null
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
          ] as any);
 
          const params = Promise.resolve({ stationId: encodeURIComponent('us:fps') });
@@ -470,7 +461,7 @@ describe('Station Page', () => {
     });
     it('covers speedToDisplay kmh correct rendering', async () => {
          // Because React renders asynchronously, intercepting progress bar updates in tests requires carefully delaying the mocked resolve
-         vi.mocked(engine.trainModel).mockImplementation(async (...args) => {
+         vi.mocked(engine.trainModel).mockImplementation(async () => {
              return null;
          });
 
@@ -490,6 +481,7 @@ describe('Station Page', () => {
                 }
             },
             null, null, null, null
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
          ] as any);
 
          const params = Promise.resolve({ stationId: encodeURIComponent('de:holfuy:263') });
@@ -537,6 +529,7 @@ describe('Station Page', () => {
 
          vi.mocked(fetchNWPForecast).mockResolvedValueOnce([
             baseGrid, baseGrid, baseGrid, baseGrid, baseGrid, baseGrid, baseGrid, baseGrid, baseGrid
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
          ] as any);
 
          vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
