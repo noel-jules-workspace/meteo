@@ -10,6 +10,24 @@ const stations = [
   'de:IKOBER13'
 ];
 
+test.describe('Integration Tests: API Validation', () => {
+  test('Returns 404 and appropriate error for unknown station ID in /api/observations', async ({ request }) => {
+    const response = await request.get('/api/observations?station=unknown:station:123');
+    expect(response.status()).toBe(404);
+
+    const body = await response.json();
+    expect(body.error).toBe('Unknown station ID');
+  });
+
+  test('Returns 400 if station ID is missing', async ({ request }) => {
+    const response = await request.get('/api/observations');
+    expect(response.status()).toBe(400);
+
+    const body = await response.json();
+    expect(body.error).toBe('Station ID is required');
+  });
+});
+
 test.describe('Integration Tests: Station Data Rendering', () => {
   for (const station of stations) {
     test(`Verify actual data is rendered for station ${station}`, async ({ page }) => {
@@ -40,8 +58,8 @@ test.describe('Integration Tests: Station Data Rendering', () => {
       await expect(chartSurface).toBeVisible({ timeout: 15000 });
 
       // Check that the first row contains some expected text formats for Wind
-      // e.g. "12 (G 15) km/h"
-      const windCell = tableRows.first().locator('td').nth(2);
+      // e.g. "12G15 kmh" or "12 mph"
+      const windCell = tableRows.first().locator('td').nth(1); // the wind cell is now column index 1 because we removed score
       const windText = await windCell.textContent();
       expect(windText).toMatch(/[0-9]+.*(kmh|mph)/);
     });

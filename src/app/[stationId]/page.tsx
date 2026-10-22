@@ -10,7 +10,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { fetchNWPForecast } from '@/lib/api/openmeteo';
 import { db, ObservationRecord } from '@/lib/db/dexie';
 import { trainModel, createFeatures } from '@/lib/ml/engine';
-import { PRESET_PROFILES, calculateSoaringScore } from '@/lib/paragliding/logic';
+import { getWindConditions } from '@/lib/paragliding/logic';
 import * as tf from '@tensorflow/tfjs';
 
 export default function StationPage({ params }: { params: Promise<{ stationId: string }> }) {
@@ -36,6 +36,9 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
   };
 
   useEffect(() => {
+    let currentModel: tf.LayersModel | null = null;
+    let isMounted = true;
+
     async function load() {
       try {
         setLoading(true);
@@ -68,9 +71,11 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
         }
 
         if (!model) {
-            const res = await trainModel(stationId, grids, allObs, (epoch, loss) => setProgress({ epoch, loss }));
+            const res = await trainModel(stationId, grids, allObs, (epoch, loss) => {
+                 if (isMounted) setProgress({ epoch, loss });
+            });
             if (res) {
-                setMetrics(res.metrics);
+                if (isMounted) setMetrics(res.metrics);
                 model = await tf.loadLayersModel(`indexeddb://${res.cacheId}`);
                 const c = await db.models.get(res.cacheId);
                 if (c) {
@@ -80,13 +85,27 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
             }
         }
 
+        currentModel = model;
+
         // 5. Predict Forecast
         const centerGrid = grids[4]; // Center of 3x3
         const forecastStartIdx = centerGrid.hourly.time.findIndex((t: string) => new Date(t + 'Z') > new Date());
         const displayData = [];
 
-        let profile = PRESET_PROFILES['fps-south']; // default
-        if (stationId.includes('holfuy:263')) profile = PRESET_PROFILES['kobern-rosenberg'];
+        let currentObs = undefined;
+        if (allObs && allObs.length > 0) {
+            const latestObs = allObs.reduce((a, b) => new Date(a.timestampUtc) > new Date(b.timestampUtc) ? a : b);
+            const rad = (latestObs.windDirDeg * Math.PI) / 180;
+            const u = -latestObs.windSpeedKmh * Math.sin(rad);
+            const v = -latestObs.windSpeedKmh * Math.cos(rad);
+            currentObs = {
+                u,
+                v,
+                speed: latestObs.windSpeedKmh,
+                gust: latestObs.windGustKmh !== undefined ? latestObs.windGustKmh : latestObs.windSpeedKmh,
+                temp: latestObs.tempC
+            };
+        }
 
         if (model && forecastStartIdx !== -1) {
             tf.tidy(() => {
@@ -99,7 +118,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
                    let speed = rawSpeed, gust = rawGust, dir = rawDir, temp = rawTemp;
 
-                   const features = createFeatures(grids, t);
+                   const features = createFeatures(grids, t, currentObs);
                    if (features.length > 0) {
                        const normalized = features.map((f, c) => (f - means[c]) / stds[c]);
                        const input = tf.tensor2d([normalized]);
@@ -126,8 +145,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
                    gust = Math.max(speed, gust);
 
                    const rainProb = centerGrid.hourly.precipitation_probability[i];
-                   const blh = centerGrid.hourly.boundary_layer_height[i];
-                   const scoring = calculateSoaringScore(profile, speed, gust, dir, rainProb, blh);
+                   const conditions = getWindConditions(speed, gust);
 
                    displayData.push({
                        time: new Date(t + 'Z').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -137,8 +155,8 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
                        dir: Math.round(dir),
                        temp: Math.round(temp),
                        rain: rainProb,
-                       score: scoring.score,
-                       breakdown: scoring.breakdown
+                       color: conditions.color,
+                       breakdown: conditions.breakdowns
                    });
                 }
             });
@@ -146,29 +164,40 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
              // Fallback to raw if no model
              for (let i = Math.max(0, forecastStartIdx); i < Math.max(0, forecastStartIdx) + 72; i++) {
                 if(!centerGrid.hourly.time[i]) continue;
+                const spd = centerGrid.hourly.wind_speed_10m[i];
+                const gst = centerGrid.hourly.wind_gusts_10m[i];
+                const conditions = getWindConditions(spd, gst);
                 displayData.push({
                    time: new Date(centerGrid.hourly.time[i] + 'Z').toLocaleTimeString(),
-                   speed: centerGrid.hourly.wind_speed_10m[i],
-                   rawSpeed: centerGrid.hourly.wind_speed_10m[i],
-                   gust: centerGrid.hourly.wind_gusts_10m[i],
+                   speed: spd,
+                   rawSpeed: spd,
+                   gust: gst,
                    dir: centerGrid.hourly.wind_direction_10m[i],
                    temp: centerGrid.hourly.temperature_2m[i],
                    rain: centerGrid.hourly.precipitation_probability[i],
-                   score: 0,
-                   breakdown: ['No ML Model available']
+                   color: conditions.color,
+                   breakdown: conditions.breakdowns
                 });
              }
         }
 
-        setChartData(displayData);
-        setData({ metadata: obsData.metadata, allObs });
+        if (isMounted) {
+          setChartData(displayData);
+          setData({ metadata: obsData.metadata, allObs });
+        }
       } catch (err) {
         console.error(err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
     load();
+    return () => {
+      isMounted = false;
+      if (currentModel) {
+        if (typeof currentModel.dispose === "function") currentModel.dispose();
+      }
+    };
   }, [stationId]);
 
   if (loading) {
@@ -245,7 +274,6 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
           <TableHead>
             <TableRow>
               <TableCell>Time</TableCell>
-              <TableCell>Score</TableCell>
               <TableCell>Wind</TableCell>
               <TableCell>Dir</TableCell>
               <TableCell>Temp</TableCell>
@@ -253,25 +281,35 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
             </TableRow>
           </TableHead>
           <TableBody>
-            {chartData.slice(0, 24).map((row, i) => (
-              <TableRow key={i}>
-                <TableCell>{row.time}</TableCell>
-                <TableCell>
-                  <Tooltip title={row.breakdown.join(' | ')}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'help' }}>
-                      <Typography sx={{ color: row.score > 70 ? '#81c784' : row.score > 40 ? '#ffd54f' : '#e57373', fontWeight: 'bold' }}>
-                        {row.score}
-                      </Typography>
-                      <Info fontSize="small" sx={{ ml: 1, opacity: 0.5 }} />
-                    </Box>
-                  </Tooltip>
-                </TableCell>
-                <TableCell>{speedToDisplay(row.speed)} (G {speedToDisplay(row.gust)}) {unit}</TableCell>
-                <TableCell>{row.dir}°</TableCell>
-                <TableCell>{row.temp}°C</TableCell>
-                <TableCell>{row.rain}%</TableCell>
-              </TableRow>
-            ))}
+            {chartData.slice(0, 24).map((row, i) => {
+              const displaySpeed = speedToDisplay(row.speed);
+              const displayGust = speedToDisplay(row.gust);
+              const windText = displaySpeed === displayGust ? `${displaySpeed}` : `${displaySpeed}G${displayGust}`;
+
+              let textColor = '#fff';
+              if (row.color === 'green') textColor = '#81c784';
+              if (row.color === 'orange') textColor = '#ffd54f';
+              if (row.color === 'red') textColor = '#e57373';
+
+              return (
+                <TableRow key={i}>
+                  <TableCell>{row.time}</TableCell>
+                  <TableCell>
+                    <Tooltip title={row.breakdown.join(' | ')}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'help' }}>
+                        <Typography sx={{ color: textColor, fontWeight: 'bold' }}>
+                          {windText} {unit}
+                        </Typography>
+                        <Info fontSize="small" sx={{ ml: 1, opacity: 0.5 }} />
+                      </Box>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell>{row.dir}°</TableCell>
+                  <TableCell>{row.temp}°C</TableCell>
+                  <TableCell>{row.rain}%</TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </Card>
