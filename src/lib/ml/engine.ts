@@ -10,7 +10,8 @@ export interface TrainingDataRow {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createFeatures(nwpGrids: any[], timeIso: string): number[] {
   const features: number[] = [];
-  const date = new Date(timeIso);
+  // timeIso might be an Open-Meteo string like "YYYY-MM-DDTHH:00" without Z
+  const date = timeIso.endsWith('Z') ? new Date(timeIso) : new Date(timeIso + 'Z');
   const hour = date.getUTCHours();
   const dayOfYear = Math.floor((date.getTime() - new Date(date.getUTCFullYear(), 0, 0).getTime()) / 86400000);
 
@@ -22,7 +23,8 @@ export function createFeatures(nwpGrids: any[], timeIso: string): number[] {
 
   for (let g = 0; g < 9; g++) {
     const grid = nwpGrids[g];
-    const hourIdx = grid.hourly.time.indexOf(timeIso);
+    const omTime = timeIso.slice(0, 16);
+    const hourIdx = grid.hourly.time.indexOf(omTime);
     if (hourIdx === -1) continue;
 
     const speed = grid.hourly.wind_speed_10m[hourIdx];
@@ -74,7 +76,8 @@ export async function trainModel(stationId: string, nwpGrids: any[], observation
   const centerGrid = nwpGrids[4];
 
   for (const [timeIso, obsVals] of Array.from(hourlyObs.entries())) {
-    const hourIdx = centerGrid.hourly.time.indexOf(timeIso);
+    const omTime = timeIso.slice(0, 16);
+    const hourIdx = centerGrid.hourly.time.indexOf(omTime);
     if (hourIdx === -1) continue; // No overlapping NWP
 
     // Vector mean for wind direction
