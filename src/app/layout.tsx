@@ -30,6 +30,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>{children}</Providers>
+        <footer className="w-full text-center py-4 text-sm text-gray-500 bg-gray-900 border-t border-gray-800 mt-auto">
+          AI-generated content. May contain errors. Verify critical information.
+        </footer>
       </body>
     </html>
   );
