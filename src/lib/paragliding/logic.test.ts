@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getWindConditions, WindConditions } from './logic';
+import { getWindConditions } from './logic';
 
 describe('Paragliding Logic - getWindConditions', () => {
     it('returns green for optimal conditions', () => {

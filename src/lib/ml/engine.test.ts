@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createFeatures, trainModel } from './engine';
 import * as tf from '@tensorflow/tfjs';
 import { db, ObservationRecord } from '../db/dexie';
@@ -6,7 +6,8 @@ import 'fake-indexeddb/auto';
 
 // Mock dependencies
 vi.mock('@tensorflow/tfjs', async (importOriginal) => {
-  const actual = await importOriginal();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const actual = await importOriginal() as any;
   return {
     ...actual,
     sequential: vi.fn(),
@@ -122,6 +123,7 @@ describe('ML Engine - createFeatures', () => {
 });
 
 describe('ML Engine - trainModel', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let mockModel: any;
 
     beforeEach(() => {
@@ -131,6 +133,7 @@ describe('ML Engine - trainModel', () => {
         mockModel = {
             add: vi.fn(),
             compile: vi.fn(),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             fit: vi.fn().mockImplementation((x: any, y: any, config: any) => {
                 if (config?.callbacks?.onEpochEnd) {
                     config.callbacks.onEpochEnd(0, { loss: 0.5 });
@@ -144,7 +147,9 @@ describe('ML Engine - trainModel', () => {
             }),
             dispose: vi.fn()
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (tf.sequential as any).mockReturnValue(mockModel);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (tf.tensor2d as any).mockImplementation((data: any) => ({
             dataSync: () => data.flat(),
             dispose: vi.fn()
@@ -269,6 +274,7 @@ describe('ML Engine - trainModel', () => {
         const mockModel = {
             add: vi.fn(),
             compile: vi.fn(),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             fit: vi.fn().mockImplementation((x: any, y: any, config: any) => {
                 if (config?.callbacks?.onEpochEnd) {
                     config.callbacks.onEpochEnd(0, null); // passing null for logs
@@ -282,6 +288,7 @@ describe('ML Engine - trainModel', () => {
             }),
             dispose: vi.fn()
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (tf.sequential as any).mockReturnValue(mockModel);
 
         const nwpGrids = new Array(9).fill(null).map(() => ({
@@ -316,6 +323,7 @@ describe('ML Engine - trainModel', () => {
         const mockModel = {
             add: vi.fn(),
             compile: vi.fn(),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             fit: vi.fn().mockImplementation((x: any, y: any, config: any) => {
                 if (config?.callbacks?.onEpochEnd) {
                     config.callbacks.onEpochEnd(0, null); // passing null for logs
@@ -329,6 +337,7 @@ describe('ML Engine - trainModel', () => {
             }),
             dispose: vi.fn()
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (tf.sequential as any).mockReturnValue(mockModel);
 
         // Use identical data so variance is exactly 0
