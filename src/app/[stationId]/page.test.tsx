@@ -507,3 +507,58 @@ describe('Station Page', () => {
          await user.click(mphButton);
          await user.click(kmhButton);
     });
+
+    it('covers speedToDisplay edge case where displaySpeed === displayGust', async () => {
+         vi.mocked(engine.trainModel).mockResolvedValueOnce(null);
+
+         const { fetchNWPForecast } = await import('@/lib/api/openmeteo');
+
+         const timeArray = [];
+         for (let i = -24; i < 48; i++) {
+             const d = new Date();
+             d.setHours(d.getHours() + i);
+             timeArray.push(d.toISOString().substring(0, 13) + ':00'); // YYYY-MM-DDTHH:00
+         }
+
+         const baseGrid = {
+             metadata: { grid_elevation: 100, elevation_diff: 10 },
+             hourly: {
+                 time: timeArray,
+                 wind_speed_10m: Array(72).fill(10),
+                 wind_direction_10m: Array(72).fill(180),
+                 wind_gusts_10m: Array(72).fill(10),
+                 temperature_2m: Array(72).fill(20),
+                 cloud_cover: Array(72).fill(0),
+                 cape: Array(72).fill(0),
+                 boundary_layer_height: Array(72).fill(500),
+                 precipitation_probability: Array(72).fill(0)
+             }
+         };
+
+         vi.mocked(fetchNWPForecast).mockResolvedValueOnce([
+            baseGrid, baseGrid, baseGrid, baseGrid, baseGrid, baseGrid, baseGrid, baseGrid, baseGrid
+         ] as any);
+
+         vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+             ok: true,
+             json: vi.fn().mockResolvedValue({
+                 metadata: { name: 'Holfuy 263', id: 'de:holfuy:263' },
+                 observations: [{ timestampUtc: new Date().toISOString(), windSpeedKmh: 10, windDirDeg: 180, tempC: 20 }]
+             })
+         }));
+
+         const params = Promise.resolve({ stationId: encodeURIComponent('de:holfuy:263') });
+         render(<StationPage params={params} />);
+
+         await waitFor(() => {
+             expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+         }, { timeout: 3000 });
+
+         await screen.findByText(/Forecast:/);
+
+         const rows = await screen.findAllByRole('row');
+         expect(rows.length).toBeGreaterThan(1);
+         const cells = Array.from(rows[1].querySelectorAll('td'));
+         expect(cells[1].textContent).toMatch(/10/);
+         expect(cells[1].textContent).not.toMatch(/10G10/);
+    });
