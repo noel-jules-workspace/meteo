@@ -44,7 +44,7 @@ export async function fetchNWPForecast(lat: number, lon: number, stationElevatio
   const combinedLatLons = `latitude=${lats.flatMap(l=>[l,l,l]).join(',')}&longitude=${lons.flatMap(()=>lons).join(',')}`;
 
   const baseUrl = pastDays > 0 ? 'https://historical-forecast-api.open-meteo.com/v1/forecast' : 'https://api.open-meteo.com/v1/forecast';
-  const url = `${baseUrl}?${combinedLatLons}&hourly=${VARIABLES}&past_days=${pastDays}&forecast_days=${forecastDays}&models=icon_d2,hrrr,best_match`;
+  const url = `${baseUrl}?${combinedLatLons}&hourly=${VARIABLES}&past_days=${pastDays}&forecast_days=${forecastDays}&models=best_match`;
 
   const res = await fetch(url);
   if (!res.ok) {
