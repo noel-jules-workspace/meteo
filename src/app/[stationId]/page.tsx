@@ -212,12 +212,17 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
   if (loading) {
     return (
       <Container sx={{ mt: 4, textAlign: 'center' }}>
-        <CircularProgress variant={progress ? "determinate" : "indeterminate"} value={progress ? (progress.epoch / 50) * 100 : undefined} />
-        {progress ? (
-          <Typography sx={{ mt: 2 }}>Training Model... Epoch {progress.epoch} / 50 (Loss: {progress.loss.toFixed(4)})</Typography>
-        ) : (
-          <Typography sx={{ mt: 2 }}>Fetching and processing data...</Typography>
-        )}
+        <Box sx={{ width: '100%', maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <NetworkVisualization progress={progress ? progress.epoch / 150 : 0} />
+          <Box sx={{ width: '100%', mt: 2 }}>
+            <LinearProgress variant={progress ? "determinate" : "indeterminate"} value={progress ? (progress.epoch / 150) * 100 : undefined} />
+          </Box>
+          {progress ? (
+            <Typography sx={{ mt: 2 }}>Training Model... Epoch {progress.epoch} / 150 (Loss: {progress.loss.toFixed(4)})</Typography>
+          ) : (
+            <Typography sx={{ mt: 2 }}>Gathering historical data and analyzing atmospheric priors...</Typography>
+          )}
+        </Box>
       </Container>
     );
   }
