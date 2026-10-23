@@ -212,12 +212,17 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
   if (loading) {
     return (
       <Container sx={{ mt: 4, textAlign: 'center' }}>
-        <CircularProgress variant={progress ? "determinate" : "indeterminate"} value={progress ? (progress.epoch / 50) * 100 : undefined} />
-        {progress ? (
-          <Typography sx={{ mt: 2 }}>Training Model... Epoch {progress.epoch} / 50 (Loss: {progress.loss.toFixed(4)})</Typography>
-        ) : (
-          <Typography sx={{ mt: 2 }}>Fetching and processing data...</Typography>
-        )}
+        <Box sx={{ width: '100%', maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <NetworkVisualization progress={progress ? progress.epoch / 150 : 0} />
+          <Box sx={{ width: '100%', mt: 2 }}>
+            <LinearProgress variant={progress ? "determinate" : "indeterminate"} value={progress ? (progress.epoch / 150) * 100 : undefined} />
+          </Box>
+          {progress ? (
+            <Typography sx={{ mt: 2 }}>Training Model... Epoch {progress.epoch} / 150 (Loss: {progress.loss.toFixed(4)})</Typography>
+          ) : (
+            <Typography sx={{ mt: 2 }}>Gathering historical data and analyzing atmospheric priors...</Typography>
+          )}
+        </Box>
       </Container>
     );
   }
@@ -339,7 +344,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography>Data & Diagnostics (Honesty Contract)</Typography>
+          <Typography>Data & Diagnostics Principles</Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -370,7 +375,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
               <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Hidden Layer 1</Typography>
-                <Typography variant="body2">64 Nodes (ReLU)</Typography>
+                <Typography variant="body2">128 Nodes (ReLU)</Typography>
               </Card>
 
               <ArrowDownward fontSize="small" sx={{ opacity: 0.5 }} />
@@ -381,6 +386,17 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
               <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Hidden Layer 2</Typography>
+                <Typography variant="body2">64 Nodes (ReLU)</Typography>
+              </Card>
+
+              <ArrowDownward fontSize="small" sx={{ opacity: 0.5 }} />
+
+              <Typography variant="caption" sx={{ opacity: 0.5 }}>20% Dropout (Regularization)</Typography>
+
+              <ArrowDownward fontSize="small" sx={{ opacity: 0.5 }} />
+
+              <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Hidden Layer 3</Typography>
                 <Typography variant="body2">32 Nodes (ReLU)</Typography>
               </Card>
 
