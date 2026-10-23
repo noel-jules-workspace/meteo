@@ -339,7 +339,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography>Data & Diagnostics (Honesty Contract)</Typography>
+          <Typography>Data & Diagnostics Principles</Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -370,7 +370,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
               <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Hidden Layer 1</Typography>
-                <Typography variant="body2">64 Nodes (ReLU)</Typography>
+                <Typography variant="body2">128 Nodes (ReLU)</Typography>
               </Card>
 
               <ArrowDownward fontSize="small" sx={{ opacity: 0.5 }} />
@@ -381,6 +381,17 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
               <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Hidden Layer 2</Typography>
+                <Typography variant="body2">64 Nodes (ReLU)</Typography>
+              </Card>
+
+              <ArrowDownward fontSize="small" sx={{ opacity: 0.5 }} />
+
+              <Typography variant="caption" sx={{ opacity: 0.5 }}>20% Dropout (Regularization)</Typography>
+
+              <ArrowDownward fontSize="small" sx={{ opacity: 0.5 }} />
+
+              <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Hidden Layer 3</Typography>
                 <Typography variant="body2">32 Nodes (ReLU)</Typography>
               </Card>
 
