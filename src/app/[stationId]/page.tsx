@@ -336,7 +336,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
 
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, my: 2 }}>
               <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center' }}>
-                <Typography variant="caption" color="text.secondary" display="block">Input Layer</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Input Layer</Typography>
                 <Typography variant="body2">99 Features</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
                   (Cyclic Time, 9-Grid NWP Forecasts, Current Obs)
@@ -346,7 +346,7 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
               <ArrowDownward fontSize="small" sx={{ opacity: 0.5 }} />
 
               <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center' }}>
-                <Typography variant="caption" color="text.secondary" display="block">Hidden Layer 1</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Hidden Layer 1</Typography>
                 <Typography variant="body2">64 Nodes (ReLU)</Typography>
               </Card>
 
@@ -357,14 +357,14 @@ export default function StationPage({ params }: { params: Promise<{ stationId: s
               <ArrowDownward fontSize="small" sx={{ opacity: 0.5 }} />
 
               <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center' }}>
-                <Typography variant="caption" color="text.secondary" display="block">Hidden Layer 2</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Hidden Layer 2</Typography>
                 <Typography variant="body2">32 Nodes (ReLU)</Typography>
               </Card>
 
               <ArrowDownward fontSize="small" sx={{ opacity: 0.5 }} />
 
               <Card sx={{ bgcolor: '#1e1e1e', p: 1.5, minWidth: 250, textAlign: 'center', border: '1px solid #90caf9' }}>
-                <Typography variant="caption" color="primary" display="block">Output Layer</Typography>
+                <Typography variant="caption" color="primary" sx={{ display: 'block' }}>Output Layer</Typography>
                 <Typography variant="body2">5 Predictions (Linear)</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
                   (Δu, Δv, Δspeed, Δgust, Δtemp)
