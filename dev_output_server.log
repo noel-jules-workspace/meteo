@@ -1,0 +1,13 @@
+
+> my-app@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.0.8
+   - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 3s
+ ○ Compiling / ...
+ ✓ Compiled / in 4.4s (1826 modules)
+ GET / 200 in 5745ms
+ ✓ Compiled in 339ms (595 modules)
