@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from 'react';
 import {
-  Container, Typography, Box, Card, CardContent, CircularProgress,
+  Container, Typography, Box, Card, CardContent, LinearProgress,
   Accordion, AccordionSummary, AccordionDetails, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, ToggleButtonGroup, ToggleButton
 } from '@mui/material';
 import { ExpandMore, Info, ArrowDownward } from '@mui/icons-material';
@@ -12,6 +12,7 @@ import { db, ObservationRecord } from '@/lib/db/dexie';
 import { trainModel, createFeatures } from '@/lib/ml/engine';
 import { getWindConditions } from '@/lib/paragliding/logic';
 import * as tf from '@tensorflow/tfjs';
+import NetworkVisualization from '@/components/NetworkVisualization';
 
 export default function StationPage({ params }: { params: Promise<{ stationId: string }> }) {
   const unwrappedParams = use(params);

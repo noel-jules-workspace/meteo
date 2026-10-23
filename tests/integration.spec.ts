@@ -40,12 +40,12 @@ test.describe('Integration Tests: Station Data Rendering', () => {
       console.log(`Navigating to ${baseUrl}/${station}`);
       await page.goto(`${baseUrl}/${station}`);
 
-      // Wait for the main title to ensure page load has started
-      await expect(page.getByRole('heading', { name: /Forecast:/ })).toBeVisible({ timeout: 20000 });
+      // The animation canvas should start playing immediately while data fetches/processes
+      const canvas = page.locator('canvas').first();
+      await expect(canvas).toBeVisible({ timeout: 10000 });
 
-      // Wait for the loading spinner to disappear
-      // The loading text/spinner might take a bit if it's doing initial training/fetching
-      await expect(page.locator('.MuiCircularProgress-root')).toBeHidden({ timeout: 60000 });
+      // Wait for the main title to ensure page load has started
+      await expect(page.getByRole('heading', { name: /Forecast:/ })).toBeVisible({ timeout: 60000 });
 
       // Wait for at least one table row to appear.
       // This is the core assertion to verify that ACTUAL data is presented,
