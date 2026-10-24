@@ -93,7 +93,7 @@ describe('Station Page', () => {
         render(<StationPage params={params} />);
 
         expect(await screen.findByRole('progressbar')).toBeInTheDocument();
-        expect(await screen.findByText(/Fetching and processing data/)).toBeInTheDocument();
+        expect(await screen.findByText(/Gathering historical data and analyzing atmospheric priors\.\.\./)).toBeInTheDocument();
     });
 
     it('loads and displays data', async () => {
@@ -399,7 +399,7 @@ describe('Station Page', () => {
          const params = Promise.resolve({ stationId: encodeURIComponent('us:fps') });
          render(<StationPage params={params} />);
 
-         expect(await screen.findByText(/Epoch 25 \/ 50/)).toBeInTheDocument();
+         expect(await screen.findByText(/Epoch 25 \/ 150/)).toBeInTheDocument();
 
          await waitFor(() => {
              expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
@@ -445,7 +445,7 @@ describe('Station Page', () => {
          const params = Promise.resolve({ stationId: encodeURIComponent('us:fps') });
          render(<StationPage params={params} />);
 
-         expect(await screen.findByText(/Epoch 25 \/ 50/)).toBeInTheDocument();
+         expect(await screen.findByText(/Epoch 25 \/ 150/)).toBeInTheDocument();
 
          await waitFor(() => {
              expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
